@@ -1,0 +1,5 @@
+README.rdoc
+Rakefile
+lib/spotlight.rb
+test/spotlight_test.rb
+Manifest
