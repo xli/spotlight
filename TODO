@@ -1,0 +1,2 @@
+create Spotlight::MDItem obj instead of module method of Spotlight
+set Date value
