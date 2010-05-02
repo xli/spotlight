@@ -16,6 +16,7 @@ void MDItemSetAttribute(MDItemRef item, CFStringRef name, CFTypeRef value);
 VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectory);
 VALUE method_attributes(VALUE self, VALUE path);
 VALUE method_set_attribute(VALUE self, VALUE path, VALUE name, VALUE value);
+VALUE method_get_attribute(VALUE self, VALUE path, VALUE name);
 
 void Init_spotlight (void)
 {
@@ -23,6 +24,7 @@ void Init_spotlight (void)
   rb_define_method(Spotlight, "search", method_search, 2);
   rb_define_method(Spotlight, "attributes", method_attributes, 1);
   rb_define_method(Spotlight, "set_attribute", method_set_attribute, 3);
+  rb_define_method(Spotlight, "get_attribute", method_get_attribute, 2);
 }
 
 VALUE cfstring2rbstr(CFStringRef str) {
@@ -44,18 +46,13 @@ CFStringRef date_string(CFDateRef date) {
   return result;
 }
 
-CFStringRef number_string(CFNumberRef number) {
-  CFLocaleRef locale = CFLocaleCopyCurrent();
-  CFNumberFormatterRef formatter = CFNumberFormatterCreate(kCFAllocatorDefault, locale, kCFNumberFormatterRoundHalfUp);
-  CFStringRef result = CFNumberFormatterCreateStringWithNumber(kCFAllocatorDefault, formatter, number);
-  RELEASE_IF_NOT_NULL(locale);
-  RELEASE_IF_NOT_NULL(formatter);
-  return result;
-}
-
-
 VALUE convert2rb_type(CFTypeRef ref) {
   VALUE result = Qnil;
+  double double_result;
+  int int_result;
+  long long_result;
+  int i;
+
   if (ref != nil) {
     if (CFGetTypeID(ref) == CFStringGetTypeID()) {
       result = cfstring2rbstr(ref);
@@ -66,19 +63,17 @@ VALUE convert2rb_type(CFTypeRef ref) {
       RELEASE_IF_NOT_NULL(date_str);
     } else if (CFGetTypeID(ref) == CFArrayGetTypeID()) {
       result = rb_ary_new();
-      int i;
       for (i = 0; i < CFArrayGetCount(ref); i++) {
         rb_ary_push(result, convert2rb_type(CFArrayGetValueAtIndex(ref, i)));
       }
     } else if (CFGetTypeID(ref) == CFNumberGetTypeID()) {
-      CFStringRef number_str = number_string(ref);
-      result = cfstring2rbstr(number_str);
       if (CFNumberIsFloatType(ref)) {
-        result = rb_funcall(result, rb_intern("to_f"), 0);
+        CFNumberGetValue(ref, kCFNumberDoubleType, &double_result);
+        result = rb_float_new(double_result);
       } else {
-        result = rb_funcall(result, rb_intern("to_i"), 0);
+        CFNumberGetValue(ref, kCFNumberLongType, &long_result);
+        result = LONG2NUM(long_result);
       }
-      RELEASE_IF_NOT_NULL(number_str);
     }
   }
   return result;
@@ -88,9 +83,9 @@ CFTypeRef convert2cf_type(VALUE obj) {
   CFTypeRef result = nil;
   double double_result;
   int int_result;
+  long long_result;
   int i, len;
   VALUE tmp[1];
-
   switch (TYPE(obj)) {
     case T_NIL:
       result = nil;
@@ -105,8 +100,12 @@ CFTypeRef convert2cf_type(VALUE obj) {
       double_result = NUM2DBL(obj);
       result = CFNumberCreate(kCFAllocatorDefault, kCFNumberDoubleType, &double_result);
       break;
+    case T_BIGNUM:
+      long_result = NUM2LONG(obj);
+      result = CFNumberCreate(kCFAllocatorDefault, kCFNumberLongType, &long_result);
+      break;
     case T_FIXNUM:
-      int_result = NUM2INT(obj);
+      int_result = FIX2INT(obj);
       result = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &int_result);
       break;
     case T_STRING:
@@ -123,7 +122,6 @@ CFTypeRef convert2cf_type(VALUE obj) {
         values[i] = convert2cf_type(rb_ary_aref(1, tmp, obj));
       }
       result = CFArrayCreate(kCFAllocatorDefault, values, len, nil);
-      RELEASE_IF_NOT_NULL(values);
       break;
   }
   return result;
@@ -176,6 +174,18 @@ VALUE method_attributes(VALUE self, VALUE path) {
   
   RELEASE_IF_NOT_NULL(mdi);
   RELEASE_IF_NOT_NULL(attr_names);
+
+  return result;
+}
+
+VALUE method_get_attribute(VALUE self, VALUE path, VALUE name) {
+  MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, rbstr2cfstring(path));
+  CFStringRef attr_name = rbstr2cfstring(name);
+  CFTypeRef attr_value = MDItemCopyAttribute(mdi, attr_name);
+  VALUE result = convert2rb_type(attr_value);
+
+  RELEASE_IF_NOT_NULL(attr_value);
+  RELEASE_IF_NOT_NULL(mdi);
 
   return result;
 }
