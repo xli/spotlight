@@ -52,15 +52,18 @@ VALUE convert2rb_type(CFTypeRef ref) {
   int int_result;
   long long_result;
   int i;
-
+  VALUE time_class;
   if (ref != nil) {
     if (CFGetTypeID(ref) == CFStringGetTypeID()) {
       result = cfstring2rbstr(ref);
     } else if (CFGetTypeID(ref) == CFDateGetTypeID()) {
-      CFStringRef date_str = date_string(ref);
-      result = cfstring2rbstr(date_str);
-      result = rb_funcall(result, rb_intern("to_datetime"), 0);
-      RELEASE_IF_NOT_NULL(date_str);
+      // 978307200.0 == (January 1, 2001 00:00 GMT) - (January 1, 1970 00:00 UTC)
+      // CFAbsoluteTime => January 1, 2001 00:00 GMT
+      // ruby Time => January 1, 1970 00:00 UTC
+      double_result = (double) CFDateGetAbsoluteTime(ref) + 978307200;
+      // todo should have a better way
+      time_class = rb_eval_string("Time");
+      result = rb_funcall(time_class, rb_intern("at"), 1, rb_float_new(double_result));
     } else if (CFGetTypeID(ref) == CFArrayGetTypeID()) {
       result = rb_ary_new();
       for (i = 0; i < CFArrayGetCount(ref); i++) {
@@ -68,10 +71,10 @@ VALUE convert2rb_type(CFTypeRef ref) {
       }
     } else if (CFGetTypeID(ref) == CFNumberGetTypeID()) {
       if (CFNumberIsFloatType(ref)) {
-        CFNumberGetValue(ref, kCFNumberDoubleType, &double_result);
+        CFNumberGetValue(ref, CFNumberGetType(ref), &double_result);
         result = rb_float_new(double_result);
       } else {
-        CFNumberGetValue(ref, kCFNumberLongType, &long_result);
+        CFNumberGetValue(ref, CFNumberGetType(ref), &long_result);
         result = LONG2NUM(long_result);
       }
     }
@@ -86,6 +89,8 @@ CFTypeRef convert2cf_type(VALUE obj) {
   long long_result;
   int i, len;
   VALUE tmp[1];
+  CFAbsoluteTime time;
+
   switch (TYPE(obj)) {
     case T_NIL:
       result = nil;
@@ -111,8 +116,14 @@ CFTypeRef convert2cf_type(VALUE obj) {
     case T_STRING:
       result = rbstr2cfstring(obj);
       break;
+    case T_DATA:
     case T_OBJECT:
-      //todo: need handle Date
+      // todo : check type is Time
+      // 978307200.0 == (January 1, 2001 00:00 GMT) - (January 1, 1970 00:00 UTC)
+      // CFAbsoluteTime => January 1, 2001 00:00 GMT
+      // ruby Time => January 1, 1970 00:00 UTC
+      time = (CFAbsoluteTime) (NUM2DBL(rb_funcall(obj, rb_intern("to_f"), 0)) - 978307200.0);
+      result = CFDateCreate(kCFAllocatorDefault, time);
       break;
     case T_ARRAY:
       len = RARRAY(obj)->len;

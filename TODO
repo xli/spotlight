@@ -1,2 +1,4 @@
 create Spotlight::MDItem obj instead of module method of Spotlight
-set Date value
+do not allow set value as other type than int, long, double, Time, string, array
+memory leak test
+
