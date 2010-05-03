@@ -1,0 +1,26 @@
+= Spotlight -- Ruby interface to Mac OSX Spotlight
+
+== Install
+
+You may need setup environment ARCHFLAGS="-arch i386" when installing the gem
+
+== Limitation
+
+It only works on Mac.
+
+= Other stuff
+
+Author: Li Xiao <iam@li-xiao.com>
+
+Requires: Ruby 1.8.6 or later
+
+License: Copyright 2010 by Li Xiao.
+         Released under an MIT-LICENSE.  See the MIT-LICENSE.txt file
+         included in the distribution.
+
+== Warranty
+
+This software is provided "as is" and without any express or
+implied warranties, including, without limitation, the implied
+warranties of merchantibility and fitness for a particular
+purpose.

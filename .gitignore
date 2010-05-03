@@ -1,2 +1,4 @@
 tmp
 lib/spotlight/spotlight.bundle
+ext
+spotlight.gemspec

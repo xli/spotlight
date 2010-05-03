@@ -6,7 +6,6 @@ module Spotlight
   end
 
   class MDItem
-
     attr_reader :path
     def initialize(path)
       @path = path

@@ -1,5 +1,10 @@
+MIT-LICENSE.txt
+Manifest
 README.rdoc
 Rakefile
+TODO
+ext/spotlight/extconf.rb
+ext/spotlight/spotlight.c
 lib/spotlight.rb
-test/spotlight_test.rb
-Manifest
+test/test_file.txt
+test/test_spotlight.rb
