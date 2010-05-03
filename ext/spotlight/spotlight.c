@@ -134,71 +134,86 @@ CFTypeRef convert2cf_type(VALUE obj) {
         tmp[0] = INT2NUM(i);
         values[i] = convert2cf_type(rb_ary_aref(1, tmp, obj));
       }
-      result = CFArrayCreate(kCFAllocatorDefault, values, len, nil);
+      result = CFArrayCreate(kCFAllocatorDefault, (const void **)values, len, nil);
       free(values);
       break;
   }
   return result;
 }
 
-VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectory) {
-  
-  CFStringRef qs = rbstr2cfstring(queryString);
-  MDQueryRef query = MDQueryCreate(kCFAllocatorDefault, qs, nil, nil);
+void set_search_scope(MDQueryRef query, VALUE scopeDirectories) {
+  int i;
+  int len = RARRAY(scopeDirectories)->len;
+  CFStringRef *scopes = (CFStringRef *)malloc(sizeof(CFStringRef) * len);
+  for (i=0; i<len; i++) {
+    scopes[i] = rbstr2cfstring(rb_ary_pop(scopeDirectories));
+  }
+
+  CFArrayRef scopesRef = CFArrayCreate(kCFAllocatorDefault, (const void **)scopes, len, nil);
+  free(scopes);
+
+  MDQuerySetSearchScope(query, scopesRef, 0);
+  RELEASE_IF_NOT_NULL(scopesRef);
+}
+
+VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectories) {
   VALUE result = Qnil;
   int i;
+  CFStringRef path;
+  MDItemRef item;
+
+  CFStringRef qs = rbstr2cfstring(queryString);
+  MDQueryRef query = MDQueryCreate(kCFAllocatorDefault, qs, nil, nil);
+  RELEASE_IF_NOT_NULL(qs);
 
   if (query) {
-    CFStringRef scopeDirectoryStr = rbstr2cfstring(scopeDirectory);
-    CFStringRef scopeDirectoryStrs[1] = {scopeDirectoryStr};
-    RELEASE_IF_NOT_NULL(scopeDirectoryStr);
-
-    CFArrayRef scopeDirectories = CFArrayCreate(kCFAllocatorDefault, (const void **)scopeDirectoryStrs, 1, nil);
-    MDQuerySetSearchScope(query, scopeDirectories, 0);
-    RELEASE_IF_NOT_NULL(scopeDirectories);
-
+    set_search_scope(query, scopeDirectories);
     if (MDQueryExecute(query, kMDQuerySynchronous)) {
       result = rb_ary_new();
       for(i = 0; i < MDQueryGetResultCount(query); ++i) {
-        MDItemRef item = (MDItemRef) MDQueryGetResultAtIndex(query, i);
-        CFStringRef path = MDItemCopyAttribute(item, kMDItemPath);
+        item = (MDItemRef) MDQueryGetResultAtIndex(query, i);
+        path = MDItemCopyAttribute(item, kMDItemPath);
         rb_ary_push(result, cfstring2rbstr(path));
-
-        RELEASE_IF_NOT_NULL(path);
       }
     }
+    RELEASE_IF_NOT_NULL(path);
     RELEASE_IF_NOT_NULL(query);
   }
 
-  RELEASE_IF_NOT_NULL(qs);
   return result;
 }
 
 VALUE method_attributes(VALUE self, VALUE path) {
-  VALUE result = rb_hash_new();
-  MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, rbstr2cfstring(path));
-  CFArrayRef attr_names = MDItemCopyAttributeNames(mdi);
   int i;
-  for (i = 0; i < CFArrayGetCount(attr_names); i++) {
-    CFStringRef attr_name = CFArrayGetValueAtIndex(attr_names, i);
-    CFTypeRef attr_value = MDItemCopyAttribute(mdi, attr_name);
-    rb_hash_aset(result, cfstring2rbstr(attr_name), convert2rb_type(attr_value));
-    RELEASE_IF_NOT_NULL(attr_value);
+  CFStringRef attrNameRef;
+  CFTypeRef attrValueRef;
+  CFStringRef pathRef = rbstr2cfstring(path);
+  MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, pathRef);
+  RELEASE_IF_NOT_NULL(pathRef);
+  CFArrayRef attrNamesRef = MDItemCopyAttributeNames(mdi);
+  VALUE result = rb_hash_new();
+  for (i = 0; i < CFArrayGetCount(attrNamesRef); i++) {
+    attrNameRef = CFArrayGetValueAtIndex(attrNamesRef, i);
+    attrValueRef = MDItemCopyAttribute(mdi, attrNameRef);
+    rb_hash_aset(result, cfstring2rbstr(attrNameRef), convert2rb_type(attrValueRef));
+    RELEASE_IF_NOT_NULL(attrValueRef);
   }
   
   RELEASE_IF_NOT_NULL(mdi);
-  RELEASE_IF_NOT_NULL(attr_names);
+  RELEASE_IF_NOT_NULL(attrNamesRef);
 
   return result;
 }
 
 VALUE method_get_attribute(VALUE self, VALUE path, VALUE name) {
   MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, rbstr2cfstring(path));
-  CFStringRef attr_name = rbstr2cfstring(name);
-  CFTypeRef attr_value = MDItemCopyAttribute(mdi, attr_name);
-  VALUE result = convert2rb_type(attr_value);
+  CFStringRef nameRef = rbstr2cfstring(name);
+  CFTypeRef valueRef = MDItemCopyAttribute(mdi, nameRef);
 
-  RELEASE_IF_NOT_NULL(attr_value);
+  VALUE result = convert2rb_type(valueRef);
+
+  RELEASE_IF_NOT_NULL(valueRef);
+  RELEASE_IF_NOT_NULL(nameRef);
   RELEASE_IF_NOT_NULL(mdi);
 
   return result;
@@ -206,12 +221,13 @@ VALUE method_get_attribute(VALUE self, VALUE path, VALUE name) {
 
 VALUE method_set_attribute(VALUE self, VALUE path, VALUE name, VALUE value) {
   MDItemRef item = MDItemCreate(kCFAllocatorDefault, rbstr2cfstring(path));
-  CFStringRef cfName = rbstr2cfstring(name);
-  CFTypeRef cfValue = convert2cf_type(value);
-  MDItemSetAttribute(item, cfName, cfValue);
+  CFStringRef nameRef = rbstr2cfstring(name);
+  CFTypeRef valueRef = convert2cf_type(value);
 
-  RELEASE_IF_NOT_NULL(cfValue);
-  RELEASE_IF_NOT_NULL(cfName);
+  MDItemSetAttribute(item, nameRef, valueRef);
+
+  RELEASE_IF_NOT_NULL(valueRef);
+  RELEASE_IF_NOT_NULL(nameRef);
   RELEASE_IF_NOT_NULL(item);
 
   return Qtrue;

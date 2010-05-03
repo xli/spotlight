@@ -12,6 +12,11 @@ class TestSpotlight < Test::Unit::TestCase
     assert_equal [@item], Spotlight.search("kMDItemDisplayName == 'test_file.txt'", @dir)
   end
 
+  def test_search_with_multi_scope_directories
+    @lib_dir = File.expand_path(File.dirname(__FILE__) + "/../lib")
+    assert_equal [@item], Spotlight.search("kMDItemDisplayName == 'test_file.txt'", @lib_dir, @dir)
+  end
+
   def test_search_attribute_just_set
     time_now = Time.now.to_i
     @item['kMDItemNow'] = time_now
