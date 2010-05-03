@@ -30,8 +30,9 @@ void Init_spotlight (void)
 
 VALUE cfstring2rbstr(CFStringRef str) {
   CFIndex len = CFStringGetMaximumSizeForEncoding(CFStringGetLength(str), kCFStringEncodingUTF8);
-  char result[len];
+  char *result = (char *)malloc(sizeof(char) * len);
   CFStringGetCString(str, result, len, kCFStringEncodingUTF8);
+  free(result);
   return rb_str_new2(result);
 }
 
@@ -44,6 +45,7 @@ CFStringRef date_string(CFDateRef date) {
   CFDateFormatterRef formatter = CFDateFormatterCreate(kCFAllocatorDefault, locale, kCFDateFormatterFullStyle, kCFDateFormatterFullStyle);
   CFStringRef result = CFDateFormatterCreateStringWithDate(kCFAllocatorDefault, formatter, date);
   RELEASE_IF_NOT_NULL(formatter);
+  RELEASE_IF_NOT_NULL(locale);
   return result;
 }
 
@@ -53,7 +55,6 @@ VALUE convert2rb_type(CFTypeRef ref) {
   int int_result;
   long long_result;
   int i;
-  VALUE time_class;
   if (ref != nil) {
     if (CFGetTypeID(ref) == CFStringGetTypeID()) {
       result = cfstring2rbstr(ref);
@@ -62,9 +63,7 @@ VALUE convert2rb_type(CFTypeRef ref) {
       // CFAbsoluteTime => January 1, 2001 00:00 GMT
       // ruby Time => January 1, 1970 00:00 UTC
       double_result = (double) CFDateGetAbsoluteTime(ref) + 978307200;
-      // todo should have a better way
-      time_class = rb_eval_string("Time");
-      result = rb_funcall(time_class, rb_intern("at"), 1, rb_float_new(double_result));
+      result = rb_funcall(rb_cTime, rb_intern("at"), 1, rb_float_new(double_result));
     } else if (CFGetTypeID(ref) == CFArrayGetTypeID()) {
       result = rb_ary_new();
       for (i = 0; i < CFArrayGetCount(ref); i++) {
