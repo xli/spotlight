@@ -1,4 +1,10 @@
 tmp
 lib/spotlight/spotlight.bundle
-ext
+pkg
+doc
+.DS_Store
 spotlight.gemspec
+ext/spotlight/Makefile
+ext/spotlight/mkmf.log
+ext/spotlight/spotlight.bundle
+ext/spotlight/spotlight.o
