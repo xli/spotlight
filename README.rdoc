@@ -1,5 +1,7 @@
 = Spotlight -- Ruby interface to Mac OSX Spotlight
 
+Not done yet, see TODO what's missed currently
+
 == Install
 
 You may need setup environment ARCHFLAGS="-arch i386" when installing the gem
