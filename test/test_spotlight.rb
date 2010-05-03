@@ -5,27 +5,26 @@ class TestSpotlight < Test::Unit::TestCase
 
   def setup
     @dir = File.expand_path(File.dirname(__FILE__))
-    @file = File.join(@dir, 'test_file.txt')
+    @item = Spotlight::MDItem.new(File.join(@dir, 'test_file.txt'))
   end
 
   def test_search
-    assert_equal [@file], Spotlight.search("kMDItemDisplayName == 'test_file.txt'", @dir)
+    assert_equal [@item], Spotlight.search("kMDItemDisplayName == 'test_file.txt'", @dir)
   end
 
   def test_search_attribute_just_set
     time_now = Time.now.to_i
-    Spotlight.set_attribute(@file, 'kMDItemNow', time_now)
-    assert_equal [@file], Spotlight.search("kMDItemNow == #{time_now}", @dir)
+    @item['kMDItemNow'] = time_now
+    assert_equal [@item], Spotlight.search("kMDItemNow == #{time_now}", @dir)
   end
 
   def test_attributes
-    attributes = Spotlight.attributes(@file)
-    assert_equal "test_file.txt", attributes['kMDItemDisplayName']
+    assert_equal "test_file.txt", @item.attributes['kMDItemDisplayName']
   end
 
   def test_get_attribute
-    assert_equal "test_file.txt", Spotlight.get_attribute(@file, 'kMDItemDisplayName')
-    assert_equal ["public.plain-text", "public.text", "public.data", "public.item", "public.content"], Spotlight.get_attribute(@file, 'kMDItemContentTypeTree')
+    assert_equal "test_file.txt", @item['kMDItemDisplayName']
+    assert_equal ["public.plain-text", "public.text", "public.data", "public.item", "public.content"], @item['kMDItemContentTypeTree']
   end
 
   def test_set_attribute
@@ -42,8 +41,7 @@ class TestSpotlight < Test::Unit::TestCase
   end
 
   def assert_attribute_set(name, value)
-    Spotlight.set_attribute(@file, name, value)
-    attr_value = Spotlight.get_attribute(@file, name)
-    assert_equal value, attr_value
+    @item[name] = value
+    assert_equal value, @item.reload[name]
   end
 end

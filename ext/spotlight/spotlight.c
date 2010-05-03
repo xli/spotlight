@@ -21,10 +21,11 @@ VALUE method_get_attribute(VALUE self, VALUE path, VALUE name);
 void Init_spotlight (void)
 {
   VALUE Spotlight = rb_define_module("Spotlight");
-  rb_define_method(Spotlight, "search", method_search, 2);
-  rb_define_method(Spotlight, "attributes", method_attributes, 1);
-  rb_define_method(Spotlight, "set_attribute", method_set_attribute, 3);
-  rb_define_method(Spotlight, "get_attribute", method_get_attribute, 2);
+  VALUE SpotlightIntern = rb_define_module_under(Spotlight, "Intern");
+  rb_define_module_function(SpotlightIntern, "search", method_search, 2);
+  rb_define_module_function(SpotlightIntern, "attributes", method_attributes, 1);
+  rb_define_module_function(SpotlightIntern, "set_attribute", method_set_attribute, 3);
+  rb_define_module_function(SpotlightIntern, "get_attribute", method_get_attribute, 2);
 }
 
 VALUE cfstring2rbstr(CFStringRef str) {
