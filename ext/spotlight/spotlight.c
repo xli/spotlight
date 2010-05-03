@@ -122,17 +122,20 @@ CFTypeRef convert2cf_type(VALUE obj) {
       // 978307200.0 == (January 1, 2001 00:00 GMT) - (January 1, 1970 00:00 UTC)
       // CFAbsoluteTime => January 1, 2001 00:00 GMT
       // ruby Time => January 1, 1970 00:00 UTC
-      time = (CFAbsoluteTime) (NUM2DBL(rb_funcall(obj, rb_intern("to_f"), 0)) - 978307200.0);
-      result = CFDateCreate(kCFAllocatorDefault, time);
+      if (rb_obj_is_kind_of(obj, rb_cTime)) {
+        time = (CFAbsoluteTime) (NUM2DBL(rb_funcall(obj, rb_intern("to_f"), 0)) - 978307200.0);
+        result = CFDateCreate(kCFAllocatorDefault, time);
+      }
       break;
     case T_ARRAY:
       len = RARRAY(obj)->len;
-      CFTypeRef values[len];
+      CFTypeRef *values = (CFTypeRef *)malloc(sizeof(CFTypeRef) * len);
       for (i = 0; i < len; i++) {
         tmp[0] = INT2NUM(i);
         values[i] = convert2cf_type(rb_ary_aref(1, tmp, obj));
       }
       result = CFArrayCreate(kCFAllocatorDefault, values, len, nil);
+      free(values);
       break;
   }
   return result;

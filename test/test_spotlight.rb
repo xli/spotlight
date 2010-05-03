@@ -22,6 +22,12 @@ class TestSpotlight < Test::Unit::TestCase
     assert_equal "test_file.txt", @item.attributes['kMDItemDisplayName']
   end
 
+  def test_could_not_set_attribute_value_when_it_is_not_time_string_int_and_float
+    assert_raise Spotlight::MDItem::InvalidAttributeValueTypeError do
+      assert_attribute_set('kMDItemTestLongType', Hash.new)
+    end
+  end
+
   def test_get_attribute
     assert_equal "test_file.txt", @item['kMDItemDisplayName']
     assert_equal ["public.plain-text", "public.text", "public.data", "public.item", "public.content"], @item['kMDItemContentTypeTree']
