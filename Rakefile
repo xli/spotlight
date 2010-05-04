@@ -5,7 +5,7 @@ require 'rubygems'
 require 'echoe'
 require 'rake/extensiontask'
 
-Echoe.new('spotlight', '0.0.1') do |p|
+Echoe.new('mac-spotlight', '0.0.1') do |p|
   p.description     = "Spotlight - Ruby interface to Mac OSX Spotlight"
   p.url             = "https://github.com/xli/spotlight"
   p.author          = "Li Xiao"

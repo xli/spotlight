@@ -3,7 +3,7 @@ lib/spotlight/spotlight.bundle
 pkg
 doc
 .DS_Store
-spotlight.gemspec
+mac-spotlight.gemspec
 ext/spotlight/Makefile
 ext/spotlight/mkmf.log
 ext/spotlight/spotlight.bundle
