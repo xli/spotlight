@@ -1,14 +1,14 @@
 require 'spotlight/spotlight'
 
 module Spotlight
-  VERSION = "0.0.1"
+  VERSION = "0.0.2"
 
   def self.search(query_string, *scope_directories)
     Intern.search(query_string, scope_directories).collect {|path| MDItem.new(path)}
   end
 
   class MDItem
-    VALID_ATTRIBUTE_VALUE_TYPE = [String, Time, Fixnum, Bignum, Float, Array]
+    VALID_ATTRIBUTE_VALUE_TYPE = [String, Time, Fixnum, Bignum, Float, Array, NilClass]
 
     class InvalidAttributeValueTypeError < StandardError
     end

@@ -39,6 +39,7 @@ class TestSpotlight < Test::Unit::TestCase
   end
 
   def test_set_attribute
+    assert_attribute_set('kMDItemTestNilType', nil)
     assert_attribute_set('kMDItemTestStringType', "Time.now: #{Time.now}")
     assert_attribute_set('kMDItemTestLongType', Time.now.to_i)
     assert_attribute_set('kMDItemTestIntType', Time.now.to_i.to_s[-3..-1].to_i)
