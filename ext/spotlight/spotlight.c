@@ -183,13 +183,19 @@ VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectories) {
   return result;
 }
 
+MDItemRef createMDItemByPath(VALUE path) {
+  CFStringRef pathRef = rbstr2cfstring(path);
+  MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, pathRef);
+  RELEASE_IF_NOT_NULL(pathRef);
+  return mdi;
+}
+
 VALUE method_attributes(VALUE self, VALUE path) {
   int i;
   CFStringRef attrNameRef;
   CFTypeRef attrValueRef;
-  CFStringRef pathRef = rbstr2cfstring(path);
-  MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, pathRef);
-  RELEASE_IF_NOT_NULL(pathRef);
+  MDItemRef mdi = createMDItemByPath(path);
+
   CFArrayRef attrNamesRef = MDItemCopyAttributeNames(mdi);
   VALUE result = rb_hash_new();
   for (i = 0; i < CFArrayGetCount(attrNamesRef); i++) {
@@ -206,7 +212,7 @@ VALUE method_attributes(VALUE self, VALUE path) {
 }
 
 VALUE method_get_attribute(VALUE self, VALUE path, VALUE name) {
-  MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, rbstr2cfstring(path));
+  MDItemRef mdi = createMDItemByPath(path);
   CFStringRef nameRef = rbstr2cfstring(name);
   CFTypeRef valueRef = MDItemCopyAttribute(mdi, nameRef);
 
@@ -220,15 +226,15 @@ VALUE method_get_attribute(VALUE self, VALUE path, VALUE name) {
 }
 
 VALUE method_set_attribute(VALUE self, VALUE path, VALUE name, VALUE value) {
-  MDItemRef item = MDItemCreate(kCFAllocatorDefault, rbstr2cfstring(path));
+  MDItemRef mdi = createMDItemByPath(path);
   CFStringRef nameRef = rbstr2cfstring(name);
   CFTypeRef valueRef = convert2cf_type(value);
 
-  MDItemSetAttribute(item, nameRef, valueRef);
+  MDItemSetAttribute(mdi, nameRef, valueRef);
 
   RELEASE_IF_NOT_NULL(valueRef);
   RELEASE_IF_NOT_NULL(nameRef);
-  RELEASE_IF_NOT_NULL(item);
+  RELEASE_IF_NOT_NULL(mdi);
 
   return Qtrue;
 }
