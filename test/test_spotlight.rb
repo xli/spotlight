@@ -23,6 +23,14 @@ class TestSpotlight < Test::Unit::TestCase
     assert_equal [@item], Spotlight.search("kMDItemNow == #{time_now}", @dir)
   end
 
+  def test_search_with_multi_attribute
+    @item['kMDItemAttr1'] = 1
+    @item['kMDItemAttr2'] = 2
+    assert_equal [], Spotlight.search("kMDItemAttr1 == 2 && kMDItemAttr2 == 3", @dir)
+    assert_equal [], Spotlight.search("kMDItemAttr1 == 1 && kMDItemAttr2 == 3", @dir)
+    assert_equal [@item], Spotlight.search("kMDItemAttr1 == 1 && kMDItemAttr2 == 2", @dir)
+  end
+
   def test_attributes
     assert_equal "test_file.txt", @item.attributes['kMDItemDisplayName']
   end

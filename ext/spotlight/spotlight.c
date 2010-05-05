@@ -32,8 +32,9 @@ VALUE cfstring2rbstr(CFStringRef str) {
   CFIndex len = CFStringGetMaximumSizeForEncoding(CFStringGetLength(str), kCFStringEncodingUTF8);
   char *result = (char *)malloc(sizeof(char) * len);
   CFStringGetCString(str, result, len, kCFStringEncodingUTF8);
+  VALUE rb_result = rb_str_new2(result);
   free(result);
-  return rb_str_new2(result);
+  return rb_result;
 }
 
 CFStringRef rbstr2cfstring(VALUE str) {
@@ -165,18 +166,19 @@ VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectories) {
   CFStringRef qs = rbstr2cfstring(queryString);
   MDQueryRef query = MDQueryCreate(kCFAllocatorDefault, qs, nil, nil);
   RELEASE_IF_NOT_NULL(qs);
-
   if (query) {
     set_search_scope(query, scopeDirectories);
     if (MDQueryExecute(query, kMDQuerySynchronous)) {
       result = rb_ary_new();
       for(i = 0; i < MDQueryGetResultCount(query); ++i) {
         item = (MDItemRef) MDQueryGetResultAtIndex(query, i);
-        path = MDItemCopyAttribute(item, kMDItemPath);
-        rb_ary_push(result, cfstring2rbstr(path));
+        if (item) {
+          path = MDItemCopyAttribute(item, kMDItemPath);
+          rb_ary_push(result, cfstring2rbstr(path));
+          RELEASE_IF_NOT_NULL(path);
+        }
       }
     }
-    RELEASE_IF_NOT_NULL(path);
     RELEASE_IF_NOT_NULL(query);
   }
 
