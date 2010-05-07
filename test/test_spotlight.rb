@@ -56,6 +56,14 @@ class TestSpotlight < Test::Unit::TestCase
     assert_attribute_set('kMDItemTestArrayTypeWithLong', [123456789])
   end
 
+  def test_set_attributes
+    attributes = {'TimeNow' => "Time.now: #{Time.now}", 'SomeThing' => Time.now.to_i}
+    @item.attributes = attributes
+    attributes.each do |key, value|
+      assert_equal value, @item.reload[key]
+    end
+  end
+
   def test_set_date_attribute
     assert_attribute_set('kMDItemTestDateType', Time.now)
   end

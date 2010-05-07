@@ -20,6 +20,9 @@ module Spotlight
     def attributes
       Intern.attributes(@path)
     end
+    def attributes=(attributes)
+      Intern.set_attributes(@path, attributes)
+    end
     def [](attr_name)
       Intern.get_attribute(@path, attr_name)
     end

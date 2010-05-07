@@ -13,35 +13,23 @@
 
 void MDItemSetAttribute(MDItemRef item, CFStringRef name, CFTypeRef value);
 
-VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectory);
-VALUE method_attributes(VALUE self, VALUE path);
-VALUE method_set_attribute(VALUE self, VALUE path, VALUE name, VALUE value);
-VALUE method_get_attribute(VALUE self, VALUE path, VALUE name);
-
-void Init_spotlight (void)
-{
-  VALUE Spotlight = rb_define_module("Spotlight");
-  VALUE SpotlightIntern = rb_define_module_under(Spotlight, "Intern");
-  rb_define_module_function(SpotlightIntern, "search", method_search, 2);
-  rb_define_module_function(SpotlightIntern, "attributes", method_attributes, 1);
-  rb_define_module_function(SpotlightIntern, "set_attribute", method_set_attribute, 3);
-  rb_define_module_function(SpotlightIntern, "get_attribute", method_get_attribute, 2);
-}
-
-VALUE cfstring2rbstr(CFStringRef str) {
-  CFIndex len = CFStringGetMaximumSizeForEncoding(CFStringGetLength(str), kCFStringEncodingUTF8);
-  char *result = (char *)malloc(sizeof(char) * len);
-  CFStringGetCString(str, result, len, kCFStringEncodingUTF8);
-  VALUE rb_result = rb_str_new2(result);
-  free(result);
+static VALUE cfstring2rbstr(CFStringRef str) {
+  const char *result;
+  VALUE rb_result = Qnil;
+  CFDataRef data = CFStringCreateExternalRepresentation(kCFAllocatorDefault, str, kCFStringEncodingUTF8, 0);
+  if (data) {
+    result = (const char *)CFDataGetBytePtr(data);
+    rb_result = rb_str_new2(result);
+  }
+  RELEASE_IF_NOT_NULL(data)
   return rb_result;
 }
 
-CFStringRef rbstr2cfstring(VALUE str) {
+static CFStringRef rbstr2cfstring(VALUE str) {
   return CFStringCreateWithCString(kCFAllocatorDefault, StringValuePtr(str), kCFStringEncodingUTF8);
 }
 
-CFStringRef date_string(CFDateRef date) {
+static CFStringRef date_string(CFDateRef date) {
   CFLocaleRef locale = CFLocaleCopyCurrent();
   CFDateFormatterRef formatter = CFDateFormatterCreate(kCFAllocatorDefault, locale, kCFDateFormatterFullStyle, kCFDateFormatterFullStyle);
   CFStringRef result = CFDateFormatterCreateStringWithDate(kCFAllocatorDefault, formatter, date);
@@ -50,13 +38,13 @@ CFStringRef date_string(CFDateRef date) {
   return result;
 }
 
-VALUE convert2rb_type(CFTypeRef ref) {
+static VALUE convert2rb_type(CFTypeRef ref) {
   VALUE result = Qnil;
   double double_result;
   int int_result;
   long long_result;
   int i;
-  if (ref != nil) {
+  if (ref != NULL) {
     if (CFGetTypeID(ref) == CFStringGetTypeID()) {
       result = cfstring2rbstr(ref);
     } else if (CFGetTypeID(ref) == CFDateGetTypeID()) {
@@ -83,18 +71,19 @@ VALUE convert2rb_type(CFTypeRef ref) {
   return result;
 }
 
-CFTypeRef convert2cf_type(VALUE obj) {
-  CFTypeRef result = nil;
+static CFTypeRef convert2cf_type(VALUE obj) {
+  CFTypeRef result = NULL;
   double double_result;
   int int_result;
   long long_result;
   int i, len;
   VALUE tmp[1];
   CFAbsoluteTime time;
+  CFMutableArrayRef array_result;
 
   switch (TYPE(obj)) {
     case T_NIL:
-      result = nil;
+      result = NULL;
       break;
     case T_TRUE:
       result = kCFBooleanTrue;
@@ -130,28 +119,24 @@ CFTypeRef convert2cf_type(VALUE obj) {
       break;
     case T_ARRAY:
       len = RARRAY(obj)->len;
-      CFTypeRef *values = (CFTypeRef *)malloc(sizeof(CFTypeRef) * len);
+      array_result = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
       for (i = 0; i < len; i++) {
         tmp[0] = INT2NUM(i);
-        values[i] = convert2cf_type(rb_ary_aref(1, tmp, obj));
+        CFArrayAppendValue(array_result, convert2cf_type(rb_ary_aref(1, tmp, obj)));
       }
-      result = CFArrayCreate(kCFAllocatorDefault, (const void **)values, len, nil);
-      free(values);
+      result = array_result;
       break;
   }
   return result;
 }
 
-void set_search_scope(MDQueryRef query, VALUE scopeDirectories) {
+static void set_search_scope(MDQueryRef query, VALUE scopeDirectories) {
   int i;
   int len = RARRAY(scopeDirectories)->len;
-  CFStringRef *scopes = (CFStringRef *)malloc(sizeof(CFStringRef) * len);
+  CFMutableArrayRef scopesRef = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
   for (i=0; i<len; i++) {
-    scopes[i] = rbstr2cfstring(rb_ary_pop(scopeDirectories));
+    CFArrayAppendValue(scopesRef, rbstr2cfstring(rb_ary_pop(scopeDirectories)));
   }
-
-  CFArrayRef scopesRef = CFArrayCreate(kCFAllocatorDefault, (const void **)scopes, len, nil);
-  free(scopes);
 
   MDQuerySetSearchScope(query, scopesRef, 0);
   RELEASE_IF_NOT_NULL(scopesRef);
@@ -164,7 +149,7 @@ VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectories) {
   MDItemRef item;
 
   CFStringRef qs = rbstr2cfstring(queryString);
-  MDQueryRef query = MDQueryCreate(kCFAllocatorDefault, qs, nil, nil);
+  MDQueryRef query = MDQueryCreate(kCFAllocatorDefault, qs, NULL, NULL);
   RELEASE_IF_NOT_NULL(qs);
   if (query) {
     set_search_scope(query, scopeDirectories);
@@ -185,12 +170,23 @@ VALUE method_search(VALUE self, VALUE queryString, VALUE scopeDirectories) {
   return result;
 }
 
-MDItemRef createMDItemByPath(VALUE path) {
+static MDItemRef createMDItemByPath(VALUE path) {
   CFStringRef pathRef = rbstr2cfstring(path);
   MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, pathRef);
   RELEASE_IF_NOT_NULL(pathRef);
   return mdi;
 }
+
+static int each_attribute(VALUE name, VALUE value, MDItemRef mdi) {
+  CFStringRef nameRef = rbstr2cfstring(name);
+  CFTypeRef valueRef = convert2cf_type(value);
+
+  MDItemSetAttribute(mdi, nameRef, valueRef);
+
+  RELEASE_IF_NOT_NULL(valueRef);
+  RELEASE_IF_NOT_NULL(nameRef);
+}
+
 
 VALUE method_attributes(VALUE self, VALUE path) {
   int i;
@@ -241,4 +237,19 @@ VALUE method_set_attribute(VALUE self, VALUE path, VALUE name, VALUE value) {
   return Qtrue;
 }
 
+VALUE method_set_attributes(VALUE self, VALUE path, VALUE attributes) {
+  MDItemRef mdi = createMDItemByPath(path);
+  rb_hash_foreach(attributes, each_attribute, (VALUE) mdi);
+  RELEASE_IF_NOT_NULL(mdi);
+}
 
+void Init_spotlight (void)
+{
+  VALUE Spotlight = rb_define_module("Spotlight");
+  VALUE SpotlightIntern = rb_define_module_under(Spotlight, "Intern");
+  rb_define_module_function(SpotlightIntern, "search", method_search, 2);
+  rb_define_module_function(SpotlightIntern, "attributes", method_attributes, 1);
+  rb_define_module_function(SpotlightIntern, "set_attribute", method_set_attribute, 3);
+  rb_define_module_function(SpotlightIntern, "get_attribute", method_get_attribute, 2);
+  rb_define_module_function(SpotlightIntern, "set_attributes", method_set_attributes, 2);
+}
