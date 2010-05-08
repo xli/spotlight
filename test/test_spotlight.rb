@@ -44,7 +44,7 @@ class TestSpotlight < Test::Unit::TestCase
   def test_get_attribute
     assert_equal "test_file.txt", @item['kMDItemDisplayName']
     assert_equal ["public.plain-text", "public.text", "public.data", "public.item", "public.content"], @item['kMDItemContentTypeTree']
-    assert_nil, @item['kMDItemNotExist']
+    assert_nil @item['kMDItemNotExist']
   end
 
   def test_set_attribute
