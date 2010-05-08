@@ -126,6 +126,9 @@ static CFTypeRef convert2cf_type(VALUE obj) {
       }
       result = array_result;
       break;
+    default:
+      rb_raise(rb_eTypeError, "not valid value");
+      break;
   }
   return result;
 }
@@ -174,6 +177,9 @@ static MDItemRef createMDItemByPath(VALUE path) {
   CFStringRef pathRef = rbstr2cfstring(path);
   MDItemRef mdi = MDItemCreate(kCFAllocatorDefault, pathRef);
   RELEASE_IF_NOT_NULL(pathRef);
+  if (!mdi) {
+    rb_raise(rb_eTypeError, "Could not find MDItem by given path");
+  }
   return mdi;
 }
 
