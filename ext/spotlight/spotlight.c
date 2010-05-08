@@ -11,7 +11,7 @@
 
 #define RELEASE_IF_NOT_NULL(ref) { if (ref) { CFRelease(ref); } }
 
-void MDItemSetAttribute(MDItemRef item, CFStringRef name, CFTypeRef value);
+Boolean MDItemSetAttribute(MDItemRef item, CFStringRef name, CFTypeRef value);
 
 static VALUE cfstring2rbstr(CFStringRef str) {
   const char *result;
@@ -44,7 +44,7 @@ static VALUE convert2rb_type(CFTypeRef ref) {
   int int_result;
   long long_result;
   int i;
-  if (ref != NULL) {
+  if (ref) {
     if (CFGetTypeID(ref) == CFStringGetTypeID()) {
       result = cfstring2rbstr(ref);
     } else if (CFGetTypeID(ref) == CFDateGetTypeID()) {
@@ -181,7 +181,9 @@ static int each_attribute(VALUE name, VALUE value, MDItemRef mdi) {
   CFStringRef nameRef = rbstr2cfstring(name);
   CFTypeRef valueRef = convert2cf_type(value);
 
-  MDItemSetAttribute(mdi, nameRef, valueRef);
+  if(!MDItemSetAttribute(mdi, nameRef, valueRef)) {
+    printf("set %s failed\n", StringValuePtr(name));
+  }
 
   RELEASE_IF_NOT_NULL(valueRef);
   RELEASE_IF_NOT_NULL(nameRef);
@@ -228,7 +230,9 @@ VALUE method_set_attribute(VALUE self, VALUE path, VALUE name, VALUE value) {
   CFStringRef nameRef = rbstr2cfstring(name);
   CFTypeRef valueRef = convert2cf_type(value);
 
-  MDItemSetAttribute(mdi, nameRef, valueRef);
+  if(!MDItemSetAttribute(mdi, nameRef, valueRef)) {
+    printf("set %s failed\n", StringValuePtr(name));
+  }
 
   RELEASE_IF_NOT_NULL(valueRef);
   RELEASE_IF_NOT_NULL(nameRef);
