@@ -49,6 +49,8 @@ class TestSpotlight < Test::Unit::TestCase
 
   def test_set_attribute
     assert_attribute_set('kMDItemTestNilType', nil)
+    assert_attribute_set('kMDItemTestTrueType', true)
+    assert_attribute_set('kMDItemTestFalseType', false)
     assert_attribute_set('kMDItemTestStringType', "Time.now: #{Time.now}")
     assert_attribute_set('kMDItemTestLongType', Time.now.to_i)
     assert_attribute_set('kMDItemTestIntType', Time.now.to_i.to_s[-3..-1].to_i)
@@ -71,6 +73,12 @@ class TestSpotlight < Test::Unit::TestCase
 
   def assert_attribute_set(name, value)
     @item[name] = value
+    if value == true
+      value = 1
+    end
+    if value == false
+      value = 0
+    end
     assert_equal value, @item.reload[name]
   end
 end
