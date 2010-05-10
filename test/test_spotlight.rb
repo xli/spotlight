@@ -71,6 +71,12 @@ class TestSpotlight < Test::Unit::TestCase
     assert_attribute_set('kMDItemTestDateType', Time.now)
   end
 
+  def test_should_raise_error_when_path_is_nil_for_mditem
+    assert_raise ArgumentError do
+      Spotlight::MDItem.new(nil)
+    end
+  end
+
   def assert_attribute_set(name, value)
     @item[name] = value
     if value == true

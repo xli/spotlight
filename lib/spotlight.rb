@@ -15,6 +15,7 @@ module Spotlight
 
     attr_reader :path
     def initialize(path)
+      raise ArgumentError, 'Path is nil' if path.nil?
       @path = path
     end
     def attributes
