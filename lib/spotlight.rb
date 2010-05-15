@@ -1,7 +1,7 @@
 require 'spotlight/spotlight'
 
 module Spotlight
-  VERSION = "0.0.3"
+  VERSION = "0.0.4"
 
   def self.search(query_string, *scope_directories)
     Intern.search(query_string, scope_directories).collect {|path| MDItem.new(path)}
