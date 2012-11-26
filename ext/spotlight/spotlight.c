@@ -11,6 +11,12 @@
 
 #define RELEASE_IF_NOT_NULL(ref) { if (ref) { CFRelease(ref); } }
 
+#ifndef RUBY_19
+#ifndef RARRAY_LEN
+#define RARRAY_LEN(v) (RARRAY(v)->len)
+#endif
+#endif
+
 Boolean MDItemSetAttribute(MDItemRef item, CFStringRef name, CFTypeRef value);
 
 static VALUE cfstring2rbstr(CFStringRef str) {
@@ -118,7 +124,7 @@ static CFTypeRef convert2cf_type(VALUE obj) {
       }
       break;
     case T_ARRAY:
-      len = RARRAY(obj)->len;
+      len = RARRAY_LEN(obj);
       array_result = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
       for (i = 0; i < len; i++) {
         tmp[0] = INT2NUM(i);
@@ -135,7 +141,7 @@ static CFTypeRef convert2cf_type(VALUE obj) {
 
 static void set_search_scope(MDQueryRef query, VALUE scopeDirectories) {
   int i;
-  int len = RARRAY(scopeDirectories)->len;
+  int len = RARRAY_LEN(scopeDirectories);
   CFMutableArrayRef scopesRef = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
   for (i=0; i<len; i++) {
     CFArrayAppendValue(scopesRef, rbstr2cfstring(rb_ary_pop(scopeDirectories)));
