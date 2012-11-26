@@ -199,6 +199,8 @@ static int each_attribute(VALUE name, VALUE value, MDItemRef mdi) {
 
   RELEASE_IF_NOT_NULL(valueRef);
   RELEASE_IF_NOT_NULL(nameRef);
+
+  return ST_CONTINUE;
 }
 
 
@@ -257,6 +259,8 @@ VALUE method_set_attributes(VALUE self, VALUE path, VALUE attributes) {
   MDItemRef mdi = createMDItemByPath(path);
   rb_hash_foreach(attributes, each_attribute, (VALUE) mdi);
   RELEASE_IF_NOT_NULL(mdi);
+
+  return Qnil;
 }
 
 void Init_spotlight (void)
