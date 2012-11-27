@@ -6,6 +6,21 @@ Not done yet, see TODO what's missed currently
 
 You may need setup environment ARCHFLAGS="-arch i386" when installing the gem
 
+== Usage
+
+    $ gem install mac-spotlight
+    Fetching: mac-spotlight-0.0.4.gem (100%)
+    Building native extensions.  This could take a while...
+    Successfully installed mac-spotlight-0.0.4
+    1 gem installed
+    Installing ri documentation for mac-spotlight-0.0.4...
+    Installing RDoc documentation for mac-spotlight-0.0.4...
+
+    $ irb
+    1.9.3-p194 :001 > require 'spotlight'
+    => true 
+
+
 == Limitation
 
 It only works on Mac.
